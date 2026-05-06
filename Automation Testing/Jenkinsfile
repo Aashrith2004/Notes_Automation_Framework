@@ -13,7 +13,7 @@ pipeline {
 
             steps {
 
-                git 'YOUR_GITHUB_REPO_URL'
+                git 'https://github.com/Aashrith2004/Notes_Automation_Framework.git'
             }
         }
 
