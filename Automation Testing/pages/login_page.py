@@ -7,8 +7,15 @@ Page Object for the ExpandTesting Notes login page.
 import time
 import allure
 
+from selenium.common.exceptions import (
+    ElementClickInterceptedException,
+    StaleElementReferenceException,
+)
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 from pages.base_page import BasePage
 from config.environment import config
@@ -25,15 +32,7 @@ class LoginPage(BasePage):
     Encapsulates all interactions with Login page.
     """
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # URL
-    # ──────────────────────────────────────────────────────────────────────────
-
     URL = config.app.ui_base_url
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Locators
-    # ──────────────────────────────────────────────────────────────────────────
 
     _LANDING_LOGIN_BUTTON = [
         (
@@ -97,24 +96,72 @@ class LoginPage(BasePage):
         "div[data-testid='alert-message']",
     )
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Constructor
-    # ──────────────────────────────────────────────────────────────────────────
-
     def __init__(self, driver: WebDriver):
 
         super().__init__(driver)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Actions
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
+
+    def safe_click(self, locator_list, timeout=20):
+        """
+        Stable click helper for Jenkins/Docker/headless.
+        """
+
+        last_exception = None
+
+        for _ in range(3):
+
+            try:
+
+                element = find_element_with_fallback(
+                    self.driver,
+                    locator_list,
+                )
+
+                WebDriverWait(
+                    self.driver,
+                    timeout
+                ).until(
+                    EC.visibility_of(element)
+                )
+
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView({block:'center'});",
+                    element
+                )
+
+                WebDriverWait(
+                    self.driver,
+                    timeout
+                ).until(
+                    lambda d: element.is_enabled()
+                )
+
+                try:
+                    element.click()
+
+                except Exception:
+                    self.driver.execute_script(
+                        "arguments[0].click();",
+                        element
+                    )
+
+                return
+
+            except (
+                ElementClickInterceptedException,
+                StaleElementReferenceException,
+            ) as e:
+
+                last_exception = e
+                time.sleep(1)
+
+        raise last_exception
+
+    # ─────────────────────────────────────────────────────────────
 
     @allure.step("Open Login page")
     def open_login_page(self) -> None:
-        """
-        Opens Notes application
-        and navigates to Login page.
-        """
 
         self.open(self.URL)
 
@@ -122,23 +169,17 @@ class LoginPage(BasePage):
             "Application landing page opened"
         )
 
-        login_button = find_element_with_fallback(
+        WebDriverWait(
             self.driver,
-            self._LANDING_LOGIN_BUTTON,
+            20
+        ).until(
+            lambda d: d.execute_script(
+                "return document.readyState"
+            ) == "complete"
         )
 
-        # Scroll into view
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            login_button
-        )
-
-        time.sleep(1)
-
-        # JS click for Jenkins/headless stability
-        self.driver.execute_script(
-            "arguments[0].click();",
-            login_button
+        self.safe_click(
+            self._LANDING_LOGIN_BUTTON
         )
 
         logger.info(
@@ -150,13 +191,17 @@ class LoginPage(BasePage):
         self,
         email: str
     ) -> None:
-        """
-        Enters email.
-        """
 
         element = find_element_with_fallback(
             self.driver,
             self._EMAIL_INPUT,
+        )
+
+        WebDriverWait(
+            self.driver,
+            20
+        ).until(
+            EC.visibility_of(element)
         )
 
         element.clear()
@@ -172,13 +217,17 @@ class LoginPage(BasePage):
         self,
         password: str
     ) -> None:
-        """
-        Enters password.
-        """
 
         element = find_element_with_fallback(
             self.driver,
             self._PASSWORD_INPUT,
+        )
+
+        WebDriverWait(
+            self.driver,
+            20
+        ).until(
+            EC.visibility_of(element)
         )
 
         element.clear()
@@ -191,27 +240,9 @@ class LoginPage(BasePage):
 
     @allure.step("Click Login button")
     def click_login(self) -> None:
-        """
-        Click Login button.
-        """
 
-        button = find_element_with_fallback(
-            self.driver,
-            self._LOGIN_BUTTON,
-        )
-
-        # Scroll into view
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            button
-        )
-
-        time.sleep(1)
-
-        # JS click for CI stability
-        self.driver.execute_script(
-            "arguments[0].click();",
-            button
+        self.safe_click(
+            self._LOGIN_BUTTON
         )
 
         logger.info(
@@ -224,9 +255,6 @@ class LoginPage(BasePage):
         email: str,
         password: str,
     ) -> None:
-        """
-        Performs complete login flow.
-        """
 
         self.open_login_page()
 
@@ -241,27 +269,21 @@ class LoginPage(BasePage):
         )
 
     def login_with_defaults(self) -> None:
-        """
-        Login using config credentials.
-        """
 
         self.login(
             config.credentials.email,
             config.credentials.password,
         )
 
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
     # Validations
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
 
     def get_error_message(self) -> str:
-        """
-        Returns login error message.
-        """
 
         if self.is_visible(
             self._ERROR_ALERT,
-            timeout=5,
+            timeout=10,
         ):
 
             return self.get_text(
@@ -271,31 +293,21 @@ class LoginPage(BasePage):
         return ""
 
     def is_login_error_displayed(self) -> bool:
-        """
-        Checks if login error appears.
-        """
 
         return self.is_visible(
             self._ERROR_ALERT,
-            timeout=5,
+            timeout=10,
         )
 
     def is_logged_in(self) -> bool:
-        """
-        Checks successful login.
-        """
 
         return (
             "/notes/app" in self.get_current_url()
         )
 
     def is_home_page_displayed(self) -> bool:
-        """
-        Verifies successful login by checking
-        MyNotes home/navbar element.
-        """
 
         return self.is_visible(
             self._HOME_LOGO,
-            timeout=10,
+            timeout=20,
         )
