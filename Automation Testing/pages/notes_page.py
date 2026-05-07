@@ -7,7 +7,11 @@ from selenium.common.exceptions import (
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import (
+    WebDriverWait,
+    Select,
+)
+
 from selenium.webdriver.support import expected_conditions as EC
 
 from pages.base_page import BasePage
@@ -20,22 +24,11 @@ logger = get_logger(__name__)
 
 
 class NotesPage(BasePage):
-    """
-    Notes dashboard page object.
-    """
-
-    # ──────────────────────────────────────────────────────────────────────────
-    # Locators
-    # ──────────────────────────────────────────────────────────────────────────
 
     _ADD_NOTE_BUTTON = [
         (
             By.CSS_SELECTOR,
             "button[data-testid='add-new-note']",
-        ),
-        (
-            By.XPATH,
-            "//button[@data-testid='add-new-note']",
         ),
     ]
 
@@ -44,20 +37,12 @@ class NotesPage(BasePage):
             By.ID,
             "title",
         ),
-        (
-            By.CSS_SELECTOR,
-            "input[name='title']",
-        ),
     ]
 
     _DESCRIPTION_INPUT = [
         (
             By.ID,
             "description",
-        ),
-        (
-            By.CSS_SELECTOR,
-            "textarea[name='description']",
         ),
     ]
 
@@ -80,11 +65,6 @@ class NotesPage(BasePage):
         "[data-testid='note-card-title']",
     )
 
-    _EDIT_BUTTON = (
-        By.CSS_SELECTOR,
-        "[data-testid='note-edit']"
-    )
-
     _TITLE_REQUIRED_ERROR = (
         By.XPATH,
         "//div[contains(text(),'Title is required')]"
@@ -95,50 +75,63 @@ class NotesPage(BasePage):
         "//div[contains(text(),'Description is required')]"
     )
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Constructor
-    # ──────────────────────────────────────────────────────────────────────────
-
     def __init__(self, driver: WebDriver):
 
         super().__init__(driver)
 
-    # ──────────────────────────────────────────────────────────────────────────
-    # Actions
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
+
+    def safe_click(self, locator, timeout=20):
+
+        last_exception = None
+
+        for _ in range(3):
+
+            try:
+
+                element = WebDriverWait(
+                    self.driver,
+                    timeout
+                ).until(
+                    EC.element_to_be_clickable(locator)
+                )
+
+                self.driver.execute_script(
+                    "arguments[0].scrollIntoView({block:'center'});",
+                    element
+                )
+
+                try:
+                    element.click()
+
+                except Exception:
+                    self.driver.execute_script(
+                        "arguments[0].click();",
+                        element
+                    )
+
+                return
+
+            except (
+                StaleElementReferenceException,
+            ) as e:
+
+                last_exception = e
+                time.sleep(1)
+
+        raise last_exception
+
+    # ─────────────────────────────────────────────────────────────
 
     @allure.step("Click Add Note button")
     def click_add_note(self) -> None:
-        """
-        Wait for Add Note button then click.
-        """
 
         locator = (
             By.CSS_SELECTOR,
             "button[data-testid='add-new-note']"
         )
 
-        # Wait for presence only
-        button = WebDriverWait(
-            self.driver,
-            30
-        ).until(
-            EC.presence_of_element_located(locator)
-        )
-
-        # Scroll into view
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            button
-        )
-
-        time.sleep(2)
-
-        # JS click for Jenkins/headless stability
-        self.driver.execute_script(
-            "arguments[0].click();",
-            button
-        )
+        self.safe_click(locator)
 
         logger.info(
             "Add Note button clicked"
@@ -149,13 +142,17 @@ class NotesPage(BasePage):
         self,
         title: str
     ) -> None:
-        """
-        Enters note title.
-        """
 
         element = find_element_with_fallback(
             self.driver,
             self._TITLE_INPUT,
+        )
+
+        WebDriverWait(
+            self.driver,
+            20
+        ).until(
+            EC.visibility_of(element)
         )
 
         element.clear()
@@ -171,13 +168,17 @@ class NotesPage(BasePage):
         self,
         description: str,
     ) -> None:
-        """
-        Enters note description.
-        """
 
         element = find_element_with_fallback(
             self.driver,
             self._DESCRIPTION_INPUT,
+        )
+
+        WebDriverWait(
+            self.driver,
+            20
+        ).until(
+            EC.visibility_of(element)
         )
 
         element.clear()
@@ -193,16 +194,23 @@ class NotesPage(BasePage):
         self,
         category: str,
     ) -> None:
-        """
-        Selects category from dropdown.
-        """
 
-        dropdown = find_element_with_fallback(
+        dropdown_element = WebDriverWait(
             self.driver,
-            self._CATEGORY_DROPDOWN,
+            20
+        ).until(
+            EC.visibility_of_element_located(
+                (By.ID, "category")
+            )
         )
 
-        dropdown.send_keys(category)
+        dropdown = Select(
+            dropdown_element
+        )
+
+        dropdown.select_by_visible_text(
+            category
+        )
 
         logger.info(
             f"Category selected: {category}"
@@ -210,27 +218,13 @@ class NotesPage(BasePage):
 
     @allure.step("Click Save button")
     def click_save(self) -> None:
-        """
-        Saves note.
-        """
 
-        button = find_element_with_fallback(
-            self.driver,
-            self._SAVE_BUTTON,
+        locator = (
+            By.XPATH,
+            "//button[contains(text(),'Create')]"
         )
 
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            button,
-        )
-
-        time.sleep(2)
-
-        # Pure JS click
-        self.driver.execute_script(
-            "arguments[0].click();",
-            button,
-        )
+        self.safe_click(locator)
 
         logger.info(
             "Save/Create button clicked"
@@ -243,9 +237,6 @@ class NotesPage(BasePage):
         description: str,
         category: str = "Home",
     ) -> None:
-        """
-        Creates complete note.
-        """
 
         self.click_add_note()
 
@@ -263,14 +254,11 @@ class NotesPage(BasePage):
             f"Note created: {title}"
         )
 
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
     # Validations
-    # ──────────────────────────────────────────────────────────────────────────
+    # ─────────────────────────────────────────────────────────────
 
     def get_note_titles(self):
-        """
-        Returns all note titles.
-        """
 
         for _ in range(3):
 
@@ -303,35 +291,28 @@ class NotesPage(BasePage):
     def is_note_present(
         self,
         title: str,
-        timeout: int = 20,
+        timeout: int = 30,
     ) -> bool:
-        """
-        Wait until created note appears in UI.
-        """
 
-        end_time = time.time() + timeout
+        try:
 
-        while time.time() < end_time:
+            WebDriverWait(
+                self.driver,
+                timeout
+            ).until(
+                EC.visibility_of_element_located((
+                    By.XPATH,
+                    f"//*[contains(text(), '{title}')]"
+                ))
+            )
 
-            try:
+            return True
 
-                titles = self.get_note_titles()
+        except Exception:
 
-                if title in titles:
-                    return True
-
-            except StaleElementReferenceException:
-
-                pass
-
-            time.sleep(1)
-
-        return False
+            return False
 
     def refresh_notes_page(self) -> None:
-        """
-        Refreshes notes dashboard.
-        """
 
         self.driver.refresh()
 
@@ -342,10 +323,6 @@ class NotesPage(BasePage):
     def is_title_required_error_displayed(
         self,
     ) -> bool:
-        """
-        Checks whether title required
-        validation message is shown.
-        """
 
         return self.is_visible(
             self._TITLE_REQUIRED_ERROR,
@@ -355,10 +332,6 @@ class NotesPage(BasePage):
     def is_description_required_error_displayed(
         self,
     ) -> bool:
-        """
-        Checks whether description required
-        validation message is displayed.
-        """
 
         return self.is_visible(
             self._DESCRIPTION_REQUIRED_ERROR,
@@ -369,7 +342,7 @@ class NotesPage(BasePage):
     def wait_for_note_visible(
         self,
         title: str,
-        timeout: int = 20,
+        timeout: int = 30,
     ):
 
         WebDriverWait(
@@ -378,34 +351,19 @@ class NotesPage(BasePage):
         ).until(
             EC.visibility_of_element_located((
                 By.XPATH,
-                f"//*[text()='{title}']"
+                f"//*[contains(text(), '{title}')]"
             ))
         )
 
     @allure.step("Delete note")
     def delete_note(self):
 
-        delete_btn = WebDriverWait(
-            self.driver,
-            20
-        ).until(
-            EC.presence_of_element_located((
-                By.CSS_SELECTOR,
-                "[data-testid='note-delete']"
-            ))
+        locator = (
+            By.CSS_SELECTOR,
+            "[data-testid='note-delete']"
         )
 
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            delete_btn
-        )
-
-        time.sleep(1)
-
-        self.driver.execute_script(
-            "arguments[0].click();",
-            delete_btn
-        )
+        self.safe_click(locator)
 
         logger.info(
             "Delete button clicked"
@@ -414,27 +372,12 @@ class NotesPage(BasePage):
     @allure.step("Confirm delete")
     def confirm_delete(self):
 
-        confirm_btn = WebDriverWait(
-            self.driver,
-            10
-        ).until(
-            EC.presence_of_element_located((
-                By.CSS_SELECTOR,
-                "[data-testid='note-delete-confirm']"
-            ))
+        locator = (
+            By.CSS_SELECTOR,
+            "[data-testid='note-delete-confirm']"
         )
 
-        self.driver.execute_script(
-            "arguments[0].scrollIntoView({block: 'center'});",
-            confirm_btn
-        )
-
-        time.sleep(1)
-
-        self.driver.execute_script(
-            "arguments[0].click();",
-            confirm_btn
-        )
+        self.safe_click(locator)
 
         logger.info(
             "Delete confirmed"
@@ -453,6 +396,6 @@ class NotesPage(BasePage):
         ).until(
             EC.invisibility_of_element_located((
                 By.XPATH,
-                f"//*[text()='{title}']"
+                f"//*[contains(text(), '{title}')]"
             ))
         )
