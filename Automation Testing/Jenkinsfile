@@ -5,39 +5,37 @@ pipeline {
     stages {
 
         stage('Install Dependencies') {
-
             steps {
-
-                bat 'pip install -r "Automation Testing/requirements.txt"'
+                bat 'python -m pip install -r "Automation Testing/requirements.txt"'
             }
         }
 
         stage('Run API Tests') {
-
             steps {
-
-                bat 'pytest "Automation Testing/tests/api" -n 2'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'python -m pytest "Automation Testing/tests/api" -n 2 --alluredir="Automation Testing/reports/allure-results"'
+                }
             }
         }
+
         stage('Run Hybrid E2E Tests') {
-
             steps {
-
-                bat 'pytest "Automation Testing/tests/e2e" -n 2'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'python -m pytest "Automation Testing/tests/e2e" -n 2 --alluredir="Automation Testing/reports/allure-results"'
+                }
             }
         }
+
         stage('Run UI Tests') {
-
             steps {
-
-                bat 'pytest "Automation Testing/tests/ui"'
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    bat 'python -m pytest "Automation Testing/tests/ui" -n 2 --alluredir="Automation Testing/reports/allure-results"'
+                }
             }
         }
 
         stage('Generate Allure Report') {
-
             steps {
-
                 allure(
                     includeProperties: false,
                     jdk: '',
@@ -66,7 +64,7 @@ pipeline {
 
         unstable {
 
-            echo 'Some tests failed.'
+            echo 'Some test cases failed. Build marked as UNSTABLE.'
         }
 
         failure {
