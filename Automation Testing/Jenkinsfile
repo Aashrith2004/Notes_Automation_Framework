@@ -21,7 +21,7 @@ pipeline {
         stage('Run Hybrid E2E Tests') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    bat 'python -m pytest "Automation Testing/tests/e2e" -n 2 --alluredir="Automation Testing/reports/allure-results"'
+                    bat 'python -m pytest "Automation Testing/tests/e2e" --alluredir="Automation Testing/reports/allure-results"'
                 }
             }
         }
@@ -29,7 +29,7 @@ pipeline {
         stage('Run UI Tests') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    bat 'python -m pytest "Automation Testing/tests/ui" -n 2 --alluredir="Automation Testing/reports/allure-results"'
+                    bat 'python -m pytest "Automation Testing/tests/ui" --alluredir="Automation Testing/reports/allure-results"'
                 }
             }
         }
