@@ -19,20 +19,18 @@ pipeline {
                 bat 'pytest "Automation Testing/tests/api" -n 2'
             }
         }
-
-        stage('Run UI Tests') {
-
-            steps {
-
-                bat 'pytest "Automation Testing/tests/ui" -n 2'
-            }
-        }
-
         stage('Run Hybrid E2E Tests') {
 
             steps {
 
                 bat 'pytest "Automation Testing/tests/e2e" -n 2'
+            }
+        }
+        stage('Run UI Tests') {
+
+            steps {
+
+                bat 'pytest "Automation Testing/tests/ui"'
             }
         }
 
