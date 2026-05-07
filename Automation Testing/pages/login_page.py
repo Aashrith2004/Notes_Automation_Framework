@@ -299,4 +299,3 @@ class LoginPage(BasePage):
             self._HOME_LOGO,
             timeout=10,
         )
-```
