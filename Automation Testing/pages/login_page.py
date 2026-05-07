@@ -1,9 +1,11 @@
+```python id="xk7m2v"
 """
 pages/login_page.py
 
 Page Object for the ExpandTesting Notes login page.
 """
 
+import time
 import allure
 
 from selenium.webdriver.common.by import By
@@ -46,8 +48,14 @@ class LoginPage(BasePage):
     ]
 
     _EMAIL_INPUT = [
-        (By.ID, "email"),
-        (By.CSS_SELECTOR, "input[type='email']"),
+        (
+            By.ID,
+            "email"
+        ),
+        (
+            By.CSS_SELECTOR,
+            "input[type='email']"
+        ),
         (
             By.XPATH,
             "//input[@placeholder='Email address']",
@@ -55,8 +63,14 @@ class LoginPage(BasePage):
     ]
 
     _PASSWORD_INPUT = [
-        (By.ID, "password"),
-        (By.CSS_SELECTOR, "input[type='password']"),
+        (
+            By.ID,
+            "password"
+        ),
+        (
+            By.CSS_SELECTOR,
+            "input[type='password']"
+        ),
         (
             By.XPATH,
             "//input[@placeholder='Password']",
@@ -73,10 +87,12 @@ class LoginPage(BasePage):
             "//button[normalize-space()='Login']",
         ),
     ]
+
     _HOME_LOGO = (
-    By.CSS_SELECTOR,
-    "a[data-testid='home']"
+        By.CSS_SELECTOR,
+        "a[data-testid='home']"
     )
+
     _ERROR_ALERT = (
         By.CSS_SELECTOR,
         "div[data-testid='alert-message']",
@@ -107,17 +123,34 @@ class LoginPage(BasePage):
             "Application landing page opened"
         )
 
-        find_element_with_fallback(
+        login_button = find_element_with_fallback(
             self.driver,
             self._LANDING_LOGIN_BUTTON,
-        ).click()
+        )
+
+        # Scroll into view
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            login_button
+        )
+
+        time.sleep(1)
+
+        # JS click for Jenkins/headless stability
+        self.driver.execute_script(
+            "arguments[0].click();",
+            login_button
+        )
 
         logger.info(
             "Landing page Login button clicked"
         )
 
     @allure.step("Enter email")
-    def enter_email(self, email: str) -> None:
+    def enter_email(
+        self,
+        email: str
+    ) -> None:
         """
         Enters email.
         """
@@ -131,10 +164,15 @@ class LoginPage(BasePage):
 
         element.send_keys(email)
 
-        logger.info(f"Email entered: {email}")
+        logger.info(
+            f"Email entered: {email}"
+        )
 
     @allure.step("Enter password")
-    def enter_password(self, password: str) -> None:
+    def enter_password(
+        self,
+        password: str
+    ) -> None:
         """
         Enters password.
         """
@@ -148,12 +186,14 @@ class LoginPage(BasePage):
 
         element.send_keys(password)
 
-        logger.info("Password entered")
+        logger.info(
+            "Password entered"
+        )
 
     @allure.step("Click Login button")
     def click_login(self) -> None:
         """
-        Click Login button with fallback.
+        Click Login button.
         """
 
         button = find_element_with_fallback(
@@ -161,22 +201,23 @@ class LoginPage(BasePage):
             self._LOGIN_BUTTON,
         )
 
-        try:
-            button.click()
+        # Scroll into view
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            button
+        )
 
-        except Exception:
+        time.sleep(1)
 
-            logger.warning(
-                "Login click intercepted. "
-                "Using JS fallback."
-            )
+        # JS click for CI stability
+        self.driver.execute_script(
+            "arguments[0].click();",
+            button
+        )
 
-            self.driver.execute_script(
-                "arguments[0].click();",
-                button,
-            )
-
-        logger.info("Login button clicked")
+        logger.info(
+            "Login button clicked"
+        )
 
     @allure.step("Perform login")
     def login(
@@ -223,6 +264,7 @@ class LoginPage(BasePage):
             self._ERROR_ALERT,
             timeout=5,
         ):
+
             return self.get_text(
                 self._ERROR_ALERT
             )
@@ -247,6 +289,7 @@ class LoginPage(BasePage):
         return (
             "/notes/app" in self.get_current_url()
         )
+
     def is_home_page_displayed(self) -> bool:
         """
         Verifies successful login by checking
@@ -257,3 +300,4 @@ class LoginPage(BasePage):
             self._HOME_LOGO,
             timeout=10,
         )
+```
