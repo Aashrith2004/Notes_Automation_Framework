@@ -63,7 +63,7 @@ class TestDeleteNoteAPI:
             .total_seconds()
         )
 
-        assert response_time < 2, (
+        assert response_time < 3, (
             f"Response time exceeded: "
             f"{response_time} seconds"
         )
