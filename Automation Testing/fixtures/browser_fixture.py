@@ -36,8 +36,10 @@ def create_driver(browser_name: str = "chrome") -> WebDriver:
         options.add_argument("--headless=new")
 
     options.add_argument("--start-maximized")
+    options.add_argument("--disable-popup-blocking")
     options.add_argument("--disable-notifications")
     options.add_argument("--disable-infobars")
+    options.add_argument("--window-size=1920,1080")
 
     driver = webdriver.Chrome(options=options)
 
