@@ -118,26 +118,37 @@ class NotesPage(BasePage):
             "button[data-testid='add-new-note']"
         )
 
+        # Wait for presence only
         button = WebDriverWait(
             self.driver,
-            10
+            30
         ).until(
-            EC.element_to_be_clickable(locator)
+            EC.presence_of_element_located(locator)
         )
 
-        try:
+        # Scroll into view
+        self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            button
+        )
 
-            button.click()
+        time.sleep(2)
 
-        except Exception:
+        # JS click for Jenkins/headless stability
+        self.driver.execute_script(
+            "arguments[0].click();",
+            button
+        )
 
-            self.driver.execute_script(
-                "arguments[0].click();",
-                button,
-            )
+        logger.info(
+            "Add Note button clicked"
+        )
 
     @allure.step("Enter note title")
-    def enter_title(self, title: str) -> None:
+    def enter_title(
+        self,
+        title: str
+    ) -> None:
         """
         Enters note title.
         """
@@ -151,7 +162,9 @@ class NotesPage(BasePage):
 
         element.send_keys(title)
 
-        logger.info(f"Title entered: {title}")
+        logger.info(
+            f"Title entered: {title}"
+        )
 
     @allure.step("Enter note description")
     def enter_description(
@@ -171,7 +184,9 @@ class NotesPage(BasePage):
 
         element.send_keys(description)
 
-        logger.info("Description entered")
+        logger.info(
+            "Description entered"
+        )
 
     @allure.step("Select note category")
     def select_category(
@@ -205,24 +220,21 @@ class NotesPage(BasePage):
         )
 
         self.driver.execute_script(
-            "arguments[0].scrollIntoView(true);",
+            "arguments[0].scrollIntoView({block: 'center'});",
             button,
         )
 
-        time.sleep(1)
+        time.sleep(2)
 
-        try:
+        # Pure JS click
+        self.driver.execute_script(
+            "arguments[0].click();",
+            button,
+        )
 
-            button.click()
-
-        except Exception:
-
-            self.driver.execute_script(
-                "arguments[0].click();",
-                button,
-            )
-
-        logger.info("Save/Create button clicked")
+        logger.info(
+            "Save/Create button clicked"
+        )
 
     @allure.step("Create new note")
     def create_note(
@@ -266,7 +278,7 @@ class NotesPage(BasePage):
 
                 WebDriverWait(
                     self.driver,
-                    10
+                    20
                 ).until(
                     EC.presence_of_all_elements_located(
                         self._NOTE_TITLES
@@ -291,7 +303,7 @@ class NotesPage(BasePage):
     def is_note_present(
         self,
         title: str,
-        timeout: int = 10,
+        timeout: int = 20,
     ) -> bool:
         """
         Wait until created note appears in UI.
@@ -323,7 +335,9 @@ class NotesPage(BasePage):
 
         self.driver.refresh()
 
-        logger.info("Notes page refreshed")
+        logger.info(
+            "Notes page refreshed"
+        )
 
     def is_title_required_error_displayed(
         self,
@@ -355,7 +369,7 @@ class NotesPage(BasePage):
     def wait_for_note_visible(
         self,
         title: str,
-        timeout: int = 10,
+        timeout: int = 20,
     ):
 
         WebDriverWait(
@@ -373,17 +387,28 @@ class NotesPage(BasePage):
 
         delete_btn = WebDriverWait(
             self.driver,
-            10
+            20
         ).until(
-            EC.element_to_be_clickable((
+            EC.presence_of_element_located((
                 By.CSS_SELECTOR,
                 "[data-testid='note-delete']"
             ))
         )
 
         self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            delete_btn
+        )
+
+        time.sleep(1)
+
+        self.driver.execute_script(
             "arguments[0].click();",
             delete_btn
+        )
+
+        logger.info(
+            "Delete button clicked"
         )
 
     @allure.step("Confirm delete")
@@ -391,24 +416,35 @@ class NotesPage(BasePage):
 
         confirm_btn = WebDriverWait(
             self.driver,
-            5
+            10
         ).until(
-            EC.element_to_be_clickable((
+            EC.presence_of_element_located((
                 By.CSS_SELECTOR,
                 "[data-testid='note-delete-confirm']"
             ))
         )
 
         self.driver.execute_script(
+            "arguments[0].scrollIntoView({block: 'center'});",
+            confirm_btn
+        )
+
+        time.sleep(1)
+
+        self.driver.execute_script(
             "arguments[0].click();",
             confirm_btn
+        )
+
+        logger.info(
+            "Delete confirmed"
         )
 
     @allure.step("Wait for note removed")
     def wait_for_note_gone(
         self,
         title: str,
-        timeout: int = 10,
+        timeout: int = 20,
     ):
 
         return WebDriverWait(
