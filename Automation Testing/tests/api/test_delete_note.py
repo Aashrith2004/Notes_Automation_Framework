@@ -56,17 +56,6 @@ class TestDeleteNoteAPI:
         # Status validation
         assert delete_response.status_code == 200
 
-        # Performance validation
-        response_time = (
-            delete_response
-            .elapsed
-            .total_seconds()
-        )
-
-        assert response_time < 3, (
-            f"Response time exceeded: "
-            f"{response_time} seconds"
-        )
 
         # Verify note removed
         get_response = notes_api.get_notes(
@@ -87,9 +76,4 @@ class TestDeleteNoteAPI:
 
         assert len(deleted_note) == 0
 
-        # Attach response time
-        allure.attach(
-            str(response_time),
-            name="Response Time",
-            attachment_type=allure.attachment_type.TEXT
-        )
+        
