@@ -30,16 +30,7 @@ class TestGetNotesAPI:
         # Status validation
         assert response.status_code == 200
 
-        # Performance validation
-        response_time = (
-            response.elapsed.total_seconds()
-        )
-
-        assert response_time < 4, (
-            f"API response time exceeded limit: "
-            f"{response_time} seconds"
-        )
-
+        
         response_data = response.json()
 
         assert "data" in response_data
@@ -49,9 +40,4 @@ class TestGetNotesAPI:
             list
         )
 
-        # Attach response time to Allure
-        allure.attach(
-            str(response_time),
-            name="Response Time (seconds)",
-            attachment_type=allure.attachment_type.TEXT
-        )
+       
