@@ -10,6 +10,12 @@ pipeline {
             }
         }
 
+        stage('Clean Previous Reports') {
+            steps {
+                bat 'if exist "Automation Testing\\reports\\allure-results" rmdir /s /q "Automation Testing\\reports\\allure-results"'
+            }
+        }
+
         stage('Run API Tests') {
             steps {
                 catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
