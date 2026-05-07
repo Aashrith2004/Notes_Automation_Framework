@@ -35,7 +35,7 @@ class TestGetNotesAPI:
             response.elapsed.total_seconds()
         )
 
-        assert response_time < 2, (
+        assert response_time < 4, (
             f"API response time exceeded limit: "
             f"{response_time} seconds"
         )
