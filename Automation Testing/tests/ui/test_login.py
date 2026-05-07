@@ -5,6 +5,7 @@ UI test cases for Login functionality.
 """
 
 import allure
+import pytest
 
 from pages.login_page import LoginPage
 from config.environment import config
@@ -15,6 +16,7 @@ from utils.wait_utils import (
 
 @allure.epic("Notes App Automation")
 @allure.feature("UI Authentication")
+@pytest.mark.ui
 class TestLogin:
     """
     Login test suite.
@@ -37,22 +39,42 @@ class TestLogin:
 
         login_page = LoginPage(driver)
 
-        login_page.login(
-            config.credentials.email,
-            config.credentials.password,
-        )
+        with allure.step(
+            "Login using valid credentials"
+        ):
 
-        wait_for_url_contains(
-            driver,
-            "/notes/app",
-            timeout=15,
-        )
+            login_page.login(
+                config.credentials.email,
+                config.credentials.password,
+            )
 
-        assert (login_page.is_home_page_displayed()), ("Home page was not displayed after successful login")
+        with allure.step(
+            "Wait for dashboard URL"
+        ):
+
+            wait_for_url_contains(
+                driver,
+                "/notes/app",
+                timeout=20,
+            )
+
+        with allure.step(
+            "Validate home page is displayed"
+        ):
+
+            assert (
+                login_page.is_home_page_displayed()
+            ), (
+                "Home page was not displayed "
+                "after successful login"
+            )
 
     @allure.story("Negative Login")
     @allure.title(
         "TC-NEG-01: Invalid password shows error"
+    )
+    @allure.severity(
+        allure.severity_level.CRITICAL
     )
     def test_invalid_password_shows_error(
         self,
@@ -64,21 +86,47 @@ class TestLogin:
 
         login_page = LoginPage(driver)
 
-        login_page.login(
-            config.credentials.email,
-            "WrongPassword123!",
-        )
+        with allure.step(
+            "Attempt login using invalid password"
+        ):
 
-        assert (
-            login_page.is_login_error_displayed()
-        ), (
-            "Expected login error message "
-            "for invalid password"
-        )
+            login_page.login(
+                config.credentials.email,
+                "WrongPassword123!",
+            )
+
+        with allure.step(
+            "Validate login error is displayed"
+        ):
+
+            assert (
+                login_page.is_login_error_displayed()
+            ), (
+                "Expected login error message "
+                "for invalid password"
+            )
+
+        with allure.step(
+            "Validate error message content"
+        ):
+
+            error_message = (
+                login_page.get_error_message()
+            )
+
+            assert (
+                error_message.strip() != ""
+            ), (
+                "Login error message text "
+                "was empty"
+            )
 
     @allure.story("Negative Login")
     @allure.title(
         "TC-NEG-02: Invalid email format"
+    )
+    @allure.severity(
+        allure.severity_level.NORMAL
     )
     def test_invalid_email_format(
         self,
@@ -90,12 +138,23 @@ class TestLogin:
 
         login_page = LoginPage(driver)
 
-        login_page.login(
-            "invalid-email",
-            config.credentials.password,
-        )
+        with allure.step(
+            "Attempt login using invalid email"
+        ):
 
-        assert (
-            login_page.is_login_error_displayed()
-            or "login" in driver.current_url
-        )
+            login_page.login(
+                "invalid-email",
+                config.credentials.password,
+            )
+
+        with allure.step(
+            "Validate invalid email handling"
+        ):
+
+            assert (
+                login_page.is_login_error_displayed()
+                or "login" in driver.current_url.lower()
+            ), (
+                "Invalid email format "
+                "was unexpectedly accepted"
+            )
