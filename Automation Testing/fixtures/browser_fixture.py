@@ -1,61 +1,93 @@
 """
 fixtures/browser_fixture.py
-
-Browser factory utilities for Selenium WebDriver creation and teardown.
-
-Responsibilities:
-- Create browser instances
-- Configure browser options
-- Provide reusable driver lifecycle helpers
 """
 
 from selenium import webdriver
-from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webdriver import (
+    WebDriver
+)
+
 from config.environment import config
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def create_driver(browser_name: str = "chrome") -> WebDriver:
+def create_driver(
+    browser_name: str = "chrome"
+) -> WebDriver:
     """
-    Creates and returns a Selenium WebDriver instance.
-
-    Args:
-        browser_name: Browser to launch (currently supports Chrome).
-
-    Returns:
-        Selenium WebDriver instance.
+    Create Chrome WebDriver.
     """
 
-    logger.info(f"Launching browser: {browser_name}")
+    logger.info(
+        f"Launching browser: {browser_name}"
+    )
 
     options = webdriver.ChromeOptions()
 
+    # Headless mode
     if config.browser.headless:
-        options.add_argument("--headless=new")
+        options.add_argument(
+            "--headless=new"
+        )
 
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-popup-blocking")
-    options.add_argument("--disable-notifications")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--window-size=1920,1080")
+    # Jenkins/Docker stability
+    options.add_argument(
+        "--window-size=1920,1080"
+    )
 
-    driver = webdriver.Chrome(options=options)
+    options.add_argument(
+        "--disable-dev-shm-usage"
+    )
 
-    logger.info("Browser launched successfully")
+    options.add_argument(
+        "--no-sandbox"
+    )
+
+    options.add_argument(
+        "--disable-gpu"
+    )
+
+    options.add_argument(
+        "--disable-notifications"
+    )
+
+    options.add_argument(
+        "--disable-popup-blocking"
+    )
+
+    driver = webdriver.Chrome(
+        options=options
+    )
+
+    driver.maximize_window()
+
+    logger.info(
+        "Browser launched successfully"
+    )
 
     return driver
 
 
-def quit_driver(driver: WebDriver) -> None:
+def quit_driver(
+    driver: WebDriver
+) -> None:
     """
-    Safely quits the browser instance.
-
-    Args:
-        driver: Selenium WebDriver instance.
+    Close browser safely.
     """
 
     if driver:
-        logger.info("Closing browser")
-        driver.quit()
+
+        logger.info(
+            "Closing browser"
+        )
+
+        try:
+            driver.quit()
+
+        except Exception as e:
+
+            logger.error(
+                f"Error closing browser: {e}"
+            )
