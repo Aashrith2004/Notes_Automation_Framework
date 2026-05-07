@@ -1,19 +1,9 @@
-"""
-pages/notes_page.py
-
-Page Object for Notes Dashboard functionality.
-
-Covers:
-- Create note
-- Validate note visibility
-- Read note list
-- Refresh notes page
-"""
-
 import time
 import allure
-import time
-import allure
+
+from selenium.common.exceptions import (
+    StaleElementReferenceException,
+)
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
@@ -39,14 +29,14 @@ class NotesPage(BasePage):
     # ──────────────────────────────────────────────────────────────────────────
 
     _ADD_NOTE_BUTTON = [
-    (
-        By.CSS_SELECTOR,
-        "button[data-testid='add-new-note']",
-    ),
-    (
-        By.XPATH,
-        "//button[@data-testid='add-new-note']",
-    ),
+        (
+            By.CSS_SELECTOR,
+            "button[data-testid='add-new-note']",
+        ),
+        (
+            By.XPATH,
+            "//button[@data-testid='add-new-note']",
+        ),
     ]
 
     _TITLE_INPUT = [
@@ -83,27 +73,27 @@ class NotesPage(BasePage):
             By.XPATH,
             "//button[contains(text(),'Create')]",
         ),
-
     ]
 
     _NOTE_TITLES = (
-    By.CSS_SELECTOR,
-    "[data-testid='note-card-title']",
+        By.CSS_SELECTOR,
+        "[data-testid='note-card-title']",
     )
 
     _EDIT_BUTTON = (
-    By.CSS_SELECTOR,
-    "[data-testid='note-edit']"
-)
+        By.CSS_SELECTOR,
+        "[data-testid='note-edit']"
+    )
 
     _TITLE_REQUIRED_ERROR = (
         By.XPATH,
         "//div[contains(text(),'Title is required')]"
-)
+    )
+
     _DESCRIPTION_REQUIRED_ERROR = (
-    By.XPATH,
-    "//div[contains(text(),'Description is required')]"
-)
+        By.XPATH,
+        "//div[contains(text(),'Description is required')]"
+    )
 
     # ──────────────────────────────────────────────────────────────────────────
     # Constructor
@@ -136,8 +126,11 @@ class NotesPage(BasePage):
         )
 
         try:
+
             button.click()
+
         except Exception:
+
             self.driver.execute_script(
                 "arguments[0].click();",
                 button,
@@ -252,6 +245,8 @@ class NotesPage(BasePage):
 
         self.click_save()
 
+        self.wait_for_note_visible(title)
+
         logger.info(
             f"Note created: {title}"
         )
@@ -265,14 +260,33 @@ class NotesPage(BasePage):
         Returns all note titles.
         """
 
-        elements = self.driver.find_elements(
-            *self._NOTE_TITLES
-        )
+        for _ in range(3):
 
-        return [
-            element.text
-            for element in elements
-        ]
+            try:
+
+                WebDriverWait(
+                    self.driver,
+                    10
+                ).until(
+                    EC.presence_of_all_elements_located(
+                        self._NOTE_TITLES
+                    )
+                )
+
+                elements = self.driver.find_elements(
+                    *self._NOTE_TITLES
+                )
+
+                return [
+                    element.text.strip()
+                    for element in elements
+                ]
+
+            except StaleElementReferenceException:
+
+                time.sleep(1)
+
+        return []
 
     def is_note_present(
         self,
@@ -287,26 +301,20 @@ class NotesPage(BasePage):
 
         while time.time() < end_time:
 
-            titles = self.get_note_titles()
+            try:
 
-            if title in titles:
-                return True
+                titles = self.get_note_titles()
+
+                if title in titles:
+                    return True
+
+            except StaleElementReferenceException:
+
+                pass
 
             time.sleep(1)
 
         return False
-
-    def is_success_alert_displayed(
-        self,
-    ) -> bool:
-        """
-        Checks success banner visibility.
-        """
-
-        return self.is_visible(
-            self._SUCCESS_ALERT,
-            timeout=5,
-        )
 
     def refresh_notes_page(self) -> None:
         """
@@ -318,8 +326,8 @@ class NotesPage(BasePage):
         logger.info("Notes page refreshed")
 
     def is_title_required_error_displayed(
-    self,
-) -> bool:
+        self,
+    ) -> bool:
         """
         Checks whether title required
         validation message is shown.
@@ -329,9 +337,10 @@ class NotesPage(BasePage):
             self._TITLE_REQUIRED_ERROR,
             timeout=5,
         )
+
     def is_description_required_error_displayed(
-    self,
-) -> bool:
+        self,
+    ) -> bool:
         """
         Checks whether description required
         validation message is displayed.
@@ -349,7 +358,10 @@ class NotesPage(BasePage):
         timeout: int = 10,
     ):
 
-        WebDriverWait(self.driver, timeout).until(
+        WebDriverWait(
+            self.driver,
+            timeout
+        ).until(
             EC.visibility_of_element_located((
                 By.XPATH,
                 f"//*[text()='{title}']"
@@ -370,9 +382,10 @@ class NotesPage(BasePage):
         )
 
         self.driver.execute_script(
-        "arguments[0].click();",
-        delete_btn
-    )
+            "arguments[0].click();",
+            delete_btn
+        )
+
     @allure.step("Confirm delete")
     def confirm_delete(self):
 

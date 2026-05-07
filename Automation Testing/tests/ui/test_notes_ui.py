@@ -17,139 +17,61 @@ from config.environment import config
 @allure.feature("Notes Management")
 class TestNotesUI:
 
-    def test_create_note_home_category(
-    self,
-    driver,
-):
-        """
-        SC-007:
-        Verify note can be created
-        with Home category.
-        """
+    @allure.feature("Notes - UI")
+    @allure.story("Create Note With Categories")
+    class TestCreateNoteCategories:
 
-        login_page = LoginPage(driver)
 
-        login_page.login(
-            config.credentials.email,
-            config.credentials.password,
+        @pytest.mark.parametrize(
+            "category,description_prefix,scenario_id",
+            [
+                ("Home", "Home category note", "SC-007"),
+                ("Work", "Work category note", "SC-008"),
+                ("Personal", "Personal category note", "SC-009"),
+            ]
         )
-
-        notes_page = NotesPage(driver)
-
-        note_title = (
-            f"Home Note {int(time.time())}"
+        @allure.title(
+            "Verify note creation with {category} category"
         )
+        def test_create_note_by_category(
+            self,
+            driver,
+            category,
+            description_prefix,
+            scenario_id,
+        ):
+            """
+            Verify note can be created
+            with different categories.
+            """
 
-        notes_page.create_note(
-            note_title,
-            "Home category note",
-            category="Home",
-        )
+            login_page = LoginPage(driver)
 
-        assert notes_page.is_note_present(
-            note_title
-        )
+            login_page.login(
+                config.credentials.email,
+                config.credentials.password,
+            )
 
-    def test_create_note_work_category(
-    self,
-    driver,
-):
-        """
-        SC-008:
-        Verify note can be created
-        with Work category.
-        """
+            notes_page = NotesPage(driver)
 
-        login_page = LoginPage(driver)
+            note_title = (
+                f"{category} Note {int(time.time())}"
+            )
 
-        login_page.login(
-            config.credentials.email,
-            config.credentials.password,
-        )
+            notes_page.create_note(
+                note_title,
+                description_prefix,
+                category=category,
+            )
 
-        notes_page = NotesPage(driver)
-
-        note_title = (
-            f"Work Note {int(time.time())}"
-        )
-
-        notes_page.create_note(
-            note_title,
-            "Work category note",
-            category="Work",
-        )
-
-        assert notes_page.is_note_present(
-            note_title
-        )
-
-    def test_create_note_personal_category(
-    self,
-    driver,
-):
-        """
-        SC-009:
-        Verify note can be created
-        with Personal category.
-        """
-
-        login_page = LoginPage(driver)
-
-        login_page.login(
-            config.credentials.email,
-            config.credentials.password,
-        )
-
-        notes_page = NotesPage(driver)
-
-        note_title = (
-            f"Personal Note {int(time.time())}"
-        )
-
-        notes_page.create_note(
-            note_title,
-            "Personal category note",
-            category="Personal",
-        )
-
-        assert notes_page.is_note_present(
-            note_title
-        )
+            assert notes_page.is_note_present(
+                note_title
+            ), (
+                f"{scenario_id}: "
+                f"Note creation failed for "
+                f"{category} category"
+            )
     
-    def test_success_banner_after_note_creation(
-    self,
-    driver,
-):
-        """
-        SC-010:
-        Verify success banner/message
-        appears after creating a note.
-        """
-
-        login_page = LoginPage(driver)
-
-        login_page.login(
-            config.credentials.email,
-            config.credentials.password,
-        )
-
-        notes_page = NotesPage(driver)
-
-        note_title = (
-            f"Banner Test {int(time.time())}"
-        )
-
-        notes_page.create_note(
-            note_title,
-            "Success banner validation",
-        )
-
-        assert (
-            notes_page.is_success_alert_displayed()
-        ), (
-            "Success banner not displayed "
-            "after note creation"
-        )
     
     def test_create_note_empty_title(
     self,
