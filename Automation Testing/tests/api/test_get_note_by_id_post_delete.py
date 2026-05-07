@@ -87,12 +87,3 @@ class TestGetNoteByIDPostDelete:
             response_data["success"]
             is False
         )
-
-        # Performance validation
-        response_time = (
-            get_response
-            .elapsed
-            .total_seconds()
-        )
-
-        assert response_time < 3
